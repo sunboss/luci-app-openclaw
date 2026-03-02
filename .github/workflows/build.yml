@@ -1,0 +1,114 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (留空自动生成，格式: 1.0.0)'
+        required: false
+        default: ''
+      create_release:
+        description: '是否创建 Release'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    name: Build packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          INPUT_VER="${{ github.event.inputs.version }}"
+          if [ -n "$INPUT_VER" ]; then
+            VER="$INPUT_VER"
+          elif [ -f VERSION ]; then
+            VER="$(cat VERSION | tr -d '[:space:]')"
+          else
+            VER="$(date -u +%Y.%m.%d)"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VER" >> "$GITHUB_OUTPUT"
+          echo "Version: $VER"
+
+      - name: Inject version
+        run: |
+          VER="${{ steps.version.outputs.version }}"
+          echo "$VER" > VERSION
+          # 同步到 Makefile
+          sed -i "s/^PKG_VERSION:=.*/PKG_VERSION:=$VER/" Makefile
+
+      - name: Build .run installer
+        run: |
+          chmod +x scripts/build_run.sh
+          sh scripts/build_run.sh dist
+
+      - name: Build .ipk package
+        run: |
+          chmod +x scripts/build_ipk.sh
+          sh scripts/build_ipk.sh dist
+
+      - name: List outputs
+        run: ls -lh dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-openclaw-${{ steps.version.outputs.version }}
+          path: dist/*
+
+      - name: Create Release
+        if: ${{ github.event.inputs.create_release == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: luci-app-openclaw ${{ steps.version.outputs.tag }}
+          files: dist/*
+          draft: false
+          prerelease: false
+          body: |
+            ## luci-app-openclaw ${{ steps.version.outputs.tag }}
+
+            OpenClaw AI 网关的 OpenWrt LuCI 管理插件。
+
+            ### 下载说明
+
+            | 文件 | 说明 |
+            |------|------|
+            | `luci-app-openclaw_*.run` | 自解压安装包，适用于已运行的 OpenWrt / iStoreOS 系统 |
+            | `luci-app-openclaw_*.ipk` | 标准 opkg 安装包 |
+
+            ### 安装方法
+
+            **方式一：.run 安装包（推荐）**
+            ```bash
+            # 上传到路由器后执行
+            sh luci-app-openclaw_${{ steps.version.outputs.version }}.run
+            ```
+
+            **方式二：.ipk 安装**
+            ```bash
+            opkg install luci-app-openclaw_${{ steps.version.outputs.version }}-1_all.ipk
+            ```
+
+            ### 安装后使用
+
+            1. 打开 LuCI → 服务 → OpenClaw
+            2. 点击「安装运行环境」，等待安装完成后服务会自动启动
+            3. 进入「Web 控制台」添加 AI 模型的 API Key 即可使用
+
+            ### 兼容性
+
+            - 系统：OpenWrt / iStoreOS / ImmortalWrt / KWRT 23.05+
+            - 架构：x86_64、aarch64
+            - C 库：glibc、musl（自动识别）
+
+            ---
+            [使用文档](https://github.com/10000ge10000/luci-app-openclaw#readme) · [问题反馈](https://github.com/10000ge10000/luci-app-openclaw/issues) · [B站](https://space.bilibili.com/59438380) · [博客](https://blog.910501.xyz/)
