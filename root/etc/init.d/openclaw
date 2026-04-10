@@ -326,6 +326,54 @@ fi
 	# 注意: extensions 目录保持 root 权限 (OpenClaw 安全要求)
 	find "$OC_DATA" -user root ! -path "${OC_DATA}/.openclaw/extensions*" -exec chown openclaw:openclaw {} \; 2>/dev/null || true
 
+	# v2026.4.10: doctor --fix 后确保关键配置字段存在
+	# doctor --fix 可能会删除或遗漏某些必要字段，需要补充
+	_ensure_critical_config() {
+		[ ! -f "$CONFIG_FILE" ] && return
+		[ ! -x "$NODE_BIN" ] && return
+		"$NODE_BIN" -e "
+const fs = require('fs');
+const f = '${CONFIG_FILE}';
+let d = {};
+try { d = JSON.parse(fs.readFileSync(f, 'utf8')); } catch(e) {}
+
+// 确保 gateway.mode 存在
+if (!d.gateway) d.gateway = {};
+if (!d.gateway.mode) d.gateway.mode = 'local';
+
+// 确保端口和绑定配置
+if (!d.gateway.port) d.gateway.port = 18789;
+if (!d.gateway.bind) d.gateway.bind = 'lan';
+
+// 确保 controlUi 安全配置存在 (允许非 loopback 绑定和 LuCI iframe 嵌入)
+if (!d.gateway.controlUi) d.gateway.controlUi = {};
+if (d.gateway.controlUi.allowInsecureAuth !== true) d.gateway.controlUi.allowInsecureAuth = true;
+if (d.gateway.controlUi.dangerouslyDisableDeviceAuth !== true) d.gateway.controlUi.dangerouslyDisableDeviceAuth = true;
+if (d.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback !== true) d.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
+
+// 确保认证配置
+if (!d.gateway.auth) d.gateway.auth = {};
+if (!d.gateway.auth.mode) d.gateway.auth.mode = 'token';
+
+// 禁用 ACP dispatch (路由器内存有限)
+if (!d.acp) d.acp = {};
+if (!d.acp.dispatch) d.acp.dispatch = {};
+d.acp.dispatch.enabled = false;
+
+// 工具配置
+if (!d.tools) d.tools = {};
+d.tools.profile = 'coding';
+
+// 禁用更新检查
+if (!d.update) d.update = {};
+d.update.checkOnStart = false;
+
+fs.writeFileSync(f, JSON.stringify(d, null, 2));
+" 2>/dev/null
+		chown openclaw:openclaw "$CONFIG_FILE" 2>/dev/null || true
+	}
+	_ensure_critical_config
+
 	# Patch iframe 安全头，允许 LuCI 嵌入
 	patch_iframe_headers
 

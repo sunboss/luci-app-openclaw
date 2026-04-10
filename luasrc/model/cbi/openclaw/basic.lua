@@ -188,11 +188,27 @@ act.cfgvalue = function(self, section)
 	html[#html+1] = '});'
 	html[#html+1] = '}'
 
-	-- 轮询安装日志
+	-- 轮询安装日志 (智能滚动: 用户向上滚动时暂停自动滚动，滚动到底部时恢复)
 	html[#html+1] = 'var _lastLogLen=0;'
+	html[#html+1] = 'var _autoScrollEnabled=true;'  -- 智能滚动状态标志
 	html[#html+1] = 'function ocPollSetupLog(){'
 	html[#html+1] = 'if(_setupTimer)clearInterval(_setupTimer);'
 	html[#html+1] = '_lastLogLen=0;'
+	html[#html+1] = '_autoScrollEnabled=true;'  -- 初始状态: 启用自动滚动
+	html[#html+1] = 'var logEl=document.getElementById("setup-log-content");'
+	-- 绑定滚动事件监听器 (只绑定一次)
+	html[#html+1] = 'if(!logEl._scrollListenerAttached){'
+	html[#html+1] = 'logEl.addEventListener("scroll",function(){'
+	html[#html+1] = 'var el=this;'
+	html[#html+1] = 'var atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<5;'
+	html[#html+1] = 'if(atBottom){'
+	html[#html+1] = '_autoScrollEnabled=true;'  -- 滚动到底部: 恢复自动滚动
+	html[#html+1] = '}else{'
+	html[#html+1] = '_autoScrollEnabled=false;'  -- 用户向上滚动: 暂停自动滚动
+	html[#html+1] = '}'
+	html[#html+1] = '});'
+	html[#html+1] = 'logEl._scrollListenerAttached=true;'
+	html[#html+1] = '}'
 	html[#html+1] = '_setupTimer=setInterval(function(){'
 	html[#html+1] = '(new XHR()).get("' .. log_url .. '",null,function(x){'
 	html[#html+1] = 'try{'
@@ -204,7 +220,10 @@ act.cfgvalue = function(self, section)
 	html[#html+1] = 'logEl.textContent+=newLog;'
 	html[#html+1] = '_lastLogLen=r.log.length;'
 	html[#html+1] = '}'
+	-- 智能滚动: 仅在自动滚动启用时滚动到底部
+	html[#html+1] = 'if(_autoScrollEnabled){'
 	html[#html+1] = 'logEl.scrollTop=logEl.scrollHeight;'
+	html[#html+1] = '}'
 	html[#html+1] = 'if(r.state==="running"){'
 	html[#html+1] = 'statusEl.innerHTML="<span style=\\"color:#7aa2f7;\\">⏳ 安装进行中...</span>";'
 	html[#html+1] = '}else if(r.state==="success"){'
@@ -395,10 +414,12 @@ act.cfgvalue = function(self, section)
 	html[#html+1] = '}'
 
 	-- 轮询插件升级日志 (带容错: 安装时文件被替换可能导致API暂时不可用)
+	-- 复用安装日志的智能滚动机制
 	html[#html+1] = 'var _pluginPollErrors=0;'
 	html[#html+1] = 'function ocPollPluginUpgradeLog(){'
 	html[#html+1] = 'if(_pluginUpgradeTimer)clearInterval(_pluginUpgradeTimer);'
 	html[#html+1] = '_pluginPollErrors=0;'
+	html[#html+1] = '_autoScrollEnabled=true;'  -- 重置: 启用自动滚动
 	html[#html+1] = '_pluginUpgradeTimer=setInterval(function(){'
 	html[#html+1] = '(new XHR()).get("' .. plugin_upgrade_log_url .. '",null,function(x){'
 	html[#html+1] = 'try{'
@@ -407,7 +428,10 @@ act.cfgvalue = function(self, section)
 	html[#html+1] = 'var logEl=document.getElementById("setup-log-content");'
 	html[#html+1] = 'var statusEl=document.getElementById("setup-log-status");'
 	html[#html+1] = 'if(r.log)logEl.textContent=r.log;'
+	-- 智能滚动: 仅在自动滚动启用时滚动到底部
+	html[#html+1] = 'if(_autoScrollEnabled){'
 	html[#html+1] = 'logEl.scrollTop=logEl.scrollHeight;'
+	html[#html+1] = '}'
 	html[#html+1] = 'if(r.state==="running"){'
 	html[#html+1] = 'statusEl.innerHTML="<span style=\\"color:#7aa2f7;\\">⏳ 插件升级中...</span>";'
 	html[#html+1] = '}else if(r.state==="success"){'
