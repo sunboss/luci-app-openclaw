@@ -3,7 +3,7 @@ set -euo pipefail
 
 readonly OPENCLAW_INSTALL="/opt/openclaw"
 readonly OPENCLAW_GLOBAL="${OPENCLAW_INSTALL}/global"
-readonly DATA_DIR="/data/openclaw"
+readonly DATA_DIR="/data"
 readonly STATE_DIR="${DATA_DIR}/.openclaw"
 readonly CONFIG_FILE="${STATE_DIR}/openclaw.json"
 readonly VERSION_MARKER="${STATE_DIR}/.doctor_ran_version"

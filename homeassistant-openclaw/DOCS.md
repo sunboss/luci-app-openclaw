@@ -3,7 +3,7 @@
 这个 add-on 不是把 LuCI 页面原样搬进 Home Assistant，而是把 `luci-app-openclaw` 里真正有价值的部分迁成了 Home Assistant 更适合的运行方式：
 
 - OpenClaw 程序在镜像构建时就装好，不再依赖 OpenWrt 里的运行时下载。
-- 配置和状态统一放到 `/data/openclaw`，重启或升级 add-on 后会保留。
+- 配置和状态统一放到 Home Assistant 官方推荐的 `/data` 下，重启或升级 add-on 后会保留。
 - 通过 Home Assistant ingress 打开 OpenClaw Web UI，不再依赖 LuCI iframe。
 - 启动时会自动补 OpenClaw 配置、执行一次必要的 `doctor --fix` 迁移，并修补 iframe 相关响应头。
 
@@ -12,7 +12,7 @@
 1. 把当前仓库作为 add-on repository 加到 Home Assistant。
 2. 安装 `OpenClaw` add-on。
 3. 启动 add-on。
-4. 从 add-on 日志里复制启动时输出的 `OpenClaw token`，或者读取 `/data/openclaw/gateway_token.txt`。
+4. 从 add-on 日志里复制启动时输出的 `OpenClaw token`，或者读取 `/data/gateway_token.txt`。
 5. 从 Home Assistant 侧边栏打开 `OpenClaw`，首次进入会自动带上 token。
 
 ## 选项

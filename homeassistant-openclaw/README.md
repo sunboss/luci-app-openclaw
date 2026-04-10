@@ -5,7 +5,7 @@ Run OpenClaw as a Home Assistant add-on with persistent data storage and ingress
 ## What it does
 
 - Installs OpenClaw into the add-on image at build time
-- Stores config and state in `/data/openclaw`
+- Stores config and state directly in `/data`
 - Opens the OpenClaw control UI through Home Assistant ingress
 - Reuses parts of the original `luci-app-openclaw` migration logic to keep OpenClaw config compatible across upgrades
 
