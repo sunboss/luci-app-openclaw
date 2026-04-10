@@ -344,14 +344,14 @@ async function restartGateway() {
       // 兼容 OpenWrt: 优先 ss，回退 netstat
       let stdout = '';
       try {
-        const result = await runCommand('ss', ['-tulnp']);
-        stdout = result.stdout;
+        stdout = execSync('ss -tulnp 2>/dev/null', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
       } catch {
         // ss 不存在，使用 netstat
-        const result = await runCommand('netstat', ['-tulnp']);
-        stdout = result.stdout;
+        try {
+          stdout = execSync('netstat -tulnp 2>/dev/null', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        } catch {}
       }
-      if (stdout.includes(`:${gwPort} `)) {
+      if (stdout && stdout.includes(`:${gwPort} `)) {
         spin.succeed(`Gateway 已重启成功 (${waited}秒)`);
         return;
       }
@@ -1103,8 +1103,8 @@ async function configureOllama() {
   console.log(`\n${C.cyan}检测 Ollama 连通性...${C.reset}`);
   let modelList = [];
   try {
-    const result = await runCommand('curl', ['-sf', '--connect-timeout', '3', '--max-time', '5', `${ollamaUrl}/api/tags`]);
-    const data = JSON.parse(result.stdout);
+    const stdout = execSync(`curl -sf --connect-timeout 3 --max-time 5 ${ollamaUrl}/api/tags`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const data = JSON.parse(stdout);
     modelList = data.models || [];
     console.log(`${C.green}✅ Ollama 已连接${C.reset}`);
   } catch {
