@@ -108,7 +108,7 @@ done
 
 sync_uci_to_json() {
 # 将 UCI 配置同步到 openclaw.json，同时确保 token 双向同步
-local port bind token
+local port bind token json_token
 port=$(uci -q get openclaw.main.port || echo "18789")
 bind=$(uci -q get openclaw.main.bind || echo "lan")
 token=$(uci -q get openclaw.main.token || echo "")
@@ -119,12 +119,26 @@ if [ ! -f "$CONFIG_FILE" ]; then
 echo '{}' > "$CONFIG_FILE"
 fi
 
-# UCI 没有 token 时，尝试从已有的 JSON 读取
-if [ -z "$token" ] && [ -x "$NODE_BIN" ]; then
-	token=$("$NODE_BIN" -e "
+# 尝试从 JSON 读取 token (用于双向同步检测)
+if [ -x "$NODE_BIN" ]; then
+	json_token=$("$NODE_BIN" -e "
 try{const d=JSON.parse(require('fs').readFileSync('${CONFIG_FILE}','utf8'));
 if(d.gateway&&d.gateway.auth&&d.gateway.auth.token)process.stdout.write(d.gateway.auth.token);}catch(e){}
 " 2>/dev/null)
+fi
+
+# v2026.4.10: 双向同步策略 - JSON 中的 token 优先
+# 原因: doctor --fix 或其他操作可能修改 JSON 中的 token
+# 如果 JSON 有 token 且与 UCI 不同，以 JSON 为准
+if [ -n "$json_token" ] && [ "$json_token" != "$token" ]; then
+	token="$json_token"
+	logger -t openclaw "Token 同步: JSON -> UCI"
+fi
+
+# UCI 和 JSON 都没有 token 时，生成一个新的
+if [ -z "$token" ]; then
+	token=$(head -c 24 /dev/urandom | hexdump -e '24/1 "%02x"' 2>/dev/null || openssl rand -hex 24 2>/dev/null || dd if=/dev/urandom bs=24 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n' | head -c 48)
+	logger -t openclaw "Token 生成: 新 token"
 fi
 
 # 如果仍然没有 token，生成一个新的
