@@ -1,0 +1,10 @@
+configuration:
+  gateway_token:
+    name: 网关令牌
+    description: 可选的固定 OpenClaw 令牌。留空则自动生成并持久化保存。
+  tools_profile:
+    name: 工具配置
+    description: 启动和配置同步时使用的 OpenClaw 工具配置，推荐使用 coding。
+  disable_update_check:
+    name: 禁用更新检查
+    description: 关闭 OpenClaw 界面内自己的更新横幅提示。

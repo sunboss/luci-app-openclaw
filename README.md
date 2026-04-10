@@ -119,6 +119,14 @@ luci-app-openclaw/
 
 欢迎提交 Issue 和 Pull Request！
 
+## Home Assistant Add-on
+
+仓库中已经加入 Home Assistant add-on 版本，目录为 `homeassistant-openclaw/`。
+
+这一版不再依赖 LuCI、UCI 和 OpenWrt 的 `procd`，而是改成 Home Assistant 的 add-on 结构、持久化目录和 ingress 访问方式。
+
+详细说明见 `homeassistant-openclaw/README.md` 和 `homeassistant-openclaw/DOCS.md`。
+
 ## 📄 License
 
 [GPL-3.0](LICENSE)

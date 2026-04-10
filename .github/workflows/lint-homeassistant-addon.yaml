@@ -1,0 +1,39 @@
+name: Lint Home Assistant App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  find:
+    name: Find apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.addons_list }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6.0.2
+
+      - name: Find app directories
+        id: apps
+        uses: home-assistant/actions/helpers/find-addons@master
+
+  lint:
+    name: Lint ${{ matrix.path }}
+    needs: find
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: ${{ fromJson(needs.find.outputs.apps) }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6.0.2
+
+      - name: Run Home Assistant app lint
+        uses: frenck/action-addon-linter@v2.21
+        with:
+          path: "./${{ matrix.path }}"

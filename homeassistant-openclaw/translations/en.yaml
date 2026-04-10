@@ -1,0 +1,10 @@
+configuration:
+  gateway_token:
+    name: Gateway token
+    description: Optional fixed token for OpenClaw. Leave empty to auto-generate and persist one.
+  tools_profile:
+    name: Tools profile
+    description: OpenClaw tools profile to enforce during bootstrap and config sync. Recommended value is coding.
+  disable_update_check:
+    name: Disable update check
+    description: Disables OpenClaw's own update banner inside the UI.

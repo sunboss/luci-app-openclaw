@@ -1,0 +1,27 @@
+name: OpenClaw
+version: "0.1.0"
+slug: openclaw
+description: Run OpenClaw inside Home Assistant with ingress access and persistent state.
+url: https://github.com/10000ge10000/luci-app-openclaw
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_icon: mdi:robot-outline
+panel_title: OpenClaw
+panel_admin: true
+backup: hot
+stage: experimental
+options:
+  gateway_token: ""
+  tools_profile: coding
+  disable_update_check: true
+schema:
+  gateway_token: str?
+  tools_profile: str
+  disable_update_check: bool
